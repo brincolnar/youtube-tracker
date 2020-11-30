@@ -2,7 +2,7 @@ const https = require("https");
 const fs = require("fs");
 const apiKey = "AIzaSyAG6cMYtyuVzQeuq_f1U94gtuBbWpx3d4k";
 
-// duration by id
+// get video duration by id
 const getVideoDurationById = (id) => {
 
   https.get(
