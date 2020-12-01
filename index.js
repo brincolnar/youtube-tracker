@@ -78,13 +78,55 @@ const getVideoDurationById = (id) => {
   );
 };
 
-getVideoDurationById("OssNdRqJ-KA");
+// getVideoDurationById("OssNdRqJ-KA");
 
 // Read from the zgodovina_ogledov.json
 const totalTime = 0; // in seconds
 const data = JSON.parse(fs.readFileSync("zgodovina_ogledov.json"));
 
-data.forEach(element => {
-  // console.log(element);
-  // getVideoDurationById();
-});
+const getVideosLatestWeek = () => {
+
+  let latestDate = data[0];
+  // console.log(parseISOString(latestDate.time).getDay()); 
+
+  // get videos from this week
+  /*
+  data.forEach(element => {
+    // console.log(element.time.substring(0, 10));
+    // getVideoDurationById();
+  });
+  */
+
+  let weekNumber = 1; // keeps track of the current week - week is from Monday to Sunday
+  let current = parseISOString(data[data.length-1].time);
+  console.log(withinWeek(current));
+  /*
+  for (let index = data.length; index > -1; index--) {
+    const element = data[index];
+    // console.log(element);
+  }
+  */
+}
+
+const parseISOString = s => {
+  let b = s.split(/\D+/);
+  return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
+}
+
+const withinWeek = (current) => {
+  let first = current.getDate() - current.getDay() + 1;
+  let last = first + 6;
+  console.log(current.toISOString());
+
+  let firstDay = new Date(current.setDate(first));
+  console.log(firstDay);
+
+  let lastDay = new Date(current.setDate(last));
+  console.log(lastDay);
+
+  console.log(new Date(current.setDate(current.getDate())));
+  let within = (firstDay.getTime() <= current.getTime() && current.getTime() <= lastDay.getTime()) ? true : false;
+  return within;
+}
+
+getVideosLatestWeek();
