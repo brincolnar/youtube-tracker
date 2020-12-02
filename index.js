@@ -97,9 +97,15 @@ const getVideosLatestWeek = () => {
   });
   */
 
-  let weekNumber = 1; // keeps track of the current week - week is from Monday to Sunday
-  let current = parseISOString(data[data.length-1].time);
-  console.log(withinWeek(current));
+  let weekNumber = 1; // keeps track of the current week - (week is defined from Monday to Sunday -- inclusive)
+  let firstDateInWeek = parseISOString(data[data.length-1].time); // first date in current week (String -> Date)
+  console.log("firstDateInWeek: " + firstDateInWeek);
+
+  let daysLater = -10;
+  let testDate= firstDateInWeek.addDays(daysLater);
+  console.log("firstDateInWeek " + daysLater + " days later: " + testDate);
+
+  console.log("withinWeek():  " + withinWeek(testDate, testDate)); // testing method
   /*
   for (let index = data.length; index > -1; index--) {
     const element = data[index];
@@ -112,21 +118,26 @@ const parseISOString = s => {
   let b = s.split(/\D+/);
   return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
 }
-
-const withinWeek = (current) => {
-  let first = current.getDate() - current.getDay() + 1;
+// TO-DO: fix withinWeek(), so that it returns the corresponding range correctly (for Sundays it goes forward and starts with Mondays)
+const withinWeek = (firstDateInWeek, current) => { // testing whether current (date) is in the week that was started with firstDateInWeek date
+  let first = firstDateInWeek.getDate() - firstDateInWeek.getDay() + 1; // determine first and last day in this week
   let last = first + 6;
-  console.log(current.toISOString());
 
-  let firstDay = new Date(current.setDate(first));
-  console.log(firstDay);
+  let firstDay = new Date(firstDateInWeek.setDate(first)); // create Date objects
+  console.log("firstDay:  " + firstDay);
 
-  let lastDay = new Date(current.setDate(last));
-  console.log(lastDay);
+  let lastDay = new Date(firstDateInWeek.setDate(last));
+  console.log("lastDay:  " + lastDay);
 
-  console.log(new Date(current.setDate(current.getDate())));
   let within = (firstDay.getTime() <= current.getTime() && current.getTime() <= lastDay.getTime()) ? true : false;
   return within;
+}
+
+// for quickly testing
+Date.prototype.addDays = function(days) {
+  var date = new Date(this.valueOf());
+  date.setDate(date.getDate() + days);
+  return date;
 }
 
 getVideosLatestWeek();
