@@ -101,7 +101,7 @@ const getVideosLatestWeek = () => {
   let firstDateInWeek = parseISOString(data[data.length-1].time); // first date in current week (String -> Date)
   console.log("firstDateInWeek: " + firstDateInWeek);
 
-  let daysLater = -10;
+  let daysLater = 10;
   let testDate= firstDateInWeek.addDays(daysLater);
   console.log("firstDateInWeek " + daysLater + " days later: " + testDate);
 
@@ -120,7 +120,14 @@ const parseISOString = s => {
 }
 // TO-DO: fix withinWeek(), so that it returns the corresponding range correctly (for Sundays it goes forward and starts with Mondays)
 const withinWeek = (firstDateInWeek, current) => { // testing whether current (date) is in the week that was started with firstDateInWeek date
+
   let first = firstDateInWeek.getDate() - firstDateInWeek.getDay() + 1; // determine first and last day in this week
+  /*
+  if(firstDateInWeek.getDay() == 0) { // Sunday
+    first = firstDateInWeek.getDate() - 6;
+  }
+  */
+ 
   let last = first + 6;
 
   let firstDay = new Date(firstDateInWeek.setDate(first)); // create Date objects
