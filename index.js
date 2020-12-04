@@ -92,19 +92,27 @@ const getVideosLatestWeek = () => {
 
   let weekNumber = 1; // keeps track of the current week - (week is defined from Monday to Sunday -- inclusive)
   let firstDateInWeek = parseISOString(data[data.length - 1].time); // first date in current week (String -> Date)
+  console.log("Week no." + "1 starts with " + firstDateInWeek);
   // console.log("firstDateInWeek: " + firstDateInWeek);
 
-  let daysLater = 379;
-  let testDate = firstDateInWeek.addDays(daysLater);
+  // let daysLater = 0;
+  // let testDate = firstDateInWeek.addDays(daysLater);
 
-  console.log("given date:  " + new Date("December 31 2020"));
-  withinWeek(new Date("December 31 2020"), testDate); // testing method
-  /*
-  for (let index = data.length; index > -1; index--) {
-    const element = data[index];
-    // console.log(element);
+  // withinWeek(new Date("December 31 2020"), new Date("Jan 1 2021")); // testing method
+  
+  for (let index = data.length-2; index > -950 + data.length; index--) { 
+
+    const currentElementDate = parseISOString(data[index].time);
+
+    if(withinWeek(firstDateInWeek, currentElementDate)) { // check if currentElementDate is in week
+      // add to the weeks watch time
+    } else {
+      weekNumber++;
+      let start = startOfWeek(currentElementDate);
+      console.log("Week no." + weekNumber + " starts with " + start);
+      firstDateInWeek = startOfWeek(currentElementDate); // currentElementDate determines the new week range
+    }
   }
-  */
 };
 
 const parseISOString = (s) => {
@@ -119,15 +127,17 @@ const withinWeek = (firstDateInWeek, current) => {
   let firstDay = startOfWeek(firstDateInWeek); // create Date objects
   let lastDay = endOfWeek(firstDateInWeek);
 
-  console.log(
+ //  console.log(current.toString());
+  /*console.log(
     "In week from " + firstDay.toString() + " to " + lastDay.toString() + "."
-  );
+  );*/
 
   let within =
     firstDay.getTime() <= current.getTime() &&
     current.getTime() <= lastDay.getTime()
       ? true
       : false;
+    
   return within;
 };
 
