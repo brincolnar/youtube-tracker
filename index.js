@@ -91,7 +91,7 @@ const getVideosLatestWeek = () => {
   */
 
   let weekNumber = 1; // keeps track of the current week - (week is defined from Monday to Sunday -- inclusive)
-  let firstDateInWeek = parseISOString(data[data.length - 1].time); // first date in current week (String -> Date)
+  let firstDateInWeek = startOfWeek(parseISOString(data[data.length - 1].time)); // first date in current week (String -> Date)
   console.log("Week no." + "1 starts with " + firstDateInWeek);
   // console.log("firstDateInWeek: " + firstDateInWeek);
 
@@ -100,19 +100,26 @@ const getVideosLatestWeek = () => {
 
   // withinWeek(new Date("December 31 2020"), new Date("Jan 1 2021")); // testing method
   
-  for (let index = data.length-2; index > -950 + data.length; index--) { 
+  for (let index = data.length-2; index > -1; index--) { 
 
     const currentElementDate = parseISOString(data[index].time);
-
+    //console.log("currentElementDate " + currentElementDate.toString());
+    
     if(withinWeek(firstDateInWeek, currentElementDate)) { // check if currentElementDate is in week
       // add to the weeks watch time
+      // console.log(`${currentElementDate.toString()} is between firstDateInWeek ${startOfWeek(firstDateInWeek).toString()} and ${endOfWeek(firstDateInWeek).toString()}`);
     } else {
+      console.log(`${currentElementDate.toString()} is NOT between firstDateInWeek ${startOfWeek(firstDateInWeek).toString()} and ${endOfWeek(firstDateInWeek).toString()}`);
       weekNumber++;
-      let start = startOfWeek(currentElementDate);
-      console.log("Week no." + weekNumber + " starts with " + start);
-      firstDateInWeek = startOfWeek(currentElementDate); // currentElementDate determines the new week range
+      console.log("Week number:" + weekNumber);
+      let start = currentElementDate;
+      console.log("Week no." + weekNumber + " starts with " + startOfWeek(start));
+      firstDateInWeek = start; // currentElementDate determines the new week range
     }
   }
+  
+  
+  // console.log(withinWeek(startOfWeek(new Date("Mon Apr 13 2020 11:45:29")), new Date("Tue Apr 14 2020")));
 };
 
 const parseISOString = (s) => {
@@ -120,18 +127,17 @@ const parseISOString = (s) => {
   return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
 };
 
-// TO-DO: check if within works as expected
 const withinWeek = (firstDateInWeek, current) => {
   // testing whether current (date) is in the week that was started with firstDateInWeek date
 
   let firstDay = startOfWeek(firstDateInWeek); // create Date objects
   let lastDay = endOfWeek(firstDateInWeek);
-
- //  console.log(current.toString());
-  /*console.log(
+  
+ /* console.log(
     "In week from " + firstDay.toString() + " to " + lastDay.toString() + "."
   );*/
 
+  // withing if between Monday at 0:00:00 and Sunday 23:59:59
   let within =
     firstDay.getTime() <= current.getTime() &&
     current.getTime() <= lastDay.getTime()
@@ -143,16 +149,26 @@ const withinWeek = (firstDateInWeek, current) => {
 
 // gets the date that corresponds to the end of the week
 const endOfWeek = (date) => {
-  var diff = date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1);
-
-  return new Date(date.setDate(diff + 6));
+  let diff = date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1);
+  let end = new Date(date.setDate(diff + 6));
+  
+  end.setHours(23);
+  end.setMinutes(59);
+  end.setSeconds(59);
+  
+  return end;
 };
 
 // gets the date that corresponds to the start of the week
 const startOfWeek = (date) => {
   var diff = date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1);
-
-  return new Date(date.setDate(diff));
+  let start = new Date(date.setDate(diff)); 
+  
+  start.setHours(0);
+  start.setMinutes(0);
+  start.setSeconds(0);
+  
+  return start;
 };
 // for quickly testing
 Date.prototype.addDays = function (days) {
