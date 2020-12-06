@@ -1,6 +1,7 @@
 const https = require("https");
 const fs = require("fs");
 const apiKey = "AIzaSyAG6cMYtyuVzQeuq_f1U94gtuBbWpx3d4k";
+const url = require("url");
 
 // get video duration by id
 const getVideoDurationById = (id) => {
@@ -11,10 +12,10 @@ const getVideoDurationById = (id) => {
         const json = JSON.parse(data);
 
         const contentDetails = json.items[0].contentDetails;
-        console.log(contentDetails);
+        // console.log(contentDetails);
 
         const duration = contentDetails.duration;
-        console.log(duration);
+        // console.log(duration);
 
         // Get duration in seconds);
         let durationInSeconds = 0;
@@ -72,53 +73,47 @@ const getVideoDurationById = (id) => {
   );
 };
 
-// getVideoDurationById("OssNdRqJ-KA");
+const getVideoId = (videoObject) => {
+  const videoUrl = videoObject.titleUrl;
 
+  const queryObject = url.parse(videoUrl, true).query;
+  console.log(queryObject.v);
+};
 // Read from the zgodovina_ogledov.json
-const totalTime = 0; // in seconds
 const data = JSON.parse(fs.readFileSync("zgodovina_ogledov.json"));
 
 const getVideosLatestWeek = () => {
-  let latestDate = data[0];
-  // console.log(parseISOString(latestDate.time).getDay());
-
-  // get videos from this week
-  /*
-  data.forEach(element => {
-    // console.log(element.time.substring(0, 10));
-    // getVideoDurationById();
-  });
-  */
-
   let weekNumber = 1; // keeps track of the current week - (week is defined from Monday to Sunday -- inclusive)
   let firstDateInWeek = startOfWeek(parseISOString(data[data.length - 1].time)); // first date in current week (String -> Date)
-  console.log("Week no." + "1 starts with " + firstDateInWeek);
-  // console.log("firstDateInWeek: " + firstDateInWeek);
 
-  // let daysLater = 0;
-  // let testDate = firstDateInWeek.addDays(daysLater);
+  // maps weekNumber to total watchtime in that week
+  let week2Watchtime = [];
 
-  // withinWeek(new Date("December 31 2020"), new Date("Jan 1 2021")); // testing method
-  
-  for (let index = data.length-2; index > -1; index--) { 
+  const weekWatchtime = 0; // current weeks's watchtime
 
+  for (let index = data.length - 2; index > -100 + data.length; index--) {
     const currentElementDate = parseISOString(data[index].time);
     //console.log("currentElementDate " + currentElementDate.toString());
-    
-    if(withinWeek(firstDateInWeek, currentElementDate)) { // check if currentElementDate is in week
+
+    if (withinWeek(firstDateInWeek, currentElementDate)) {
+      // check if currentElementDate is in week
       // add to the weeks watch time
-      // console.log(`${currentElementDate.toString()} is between firstDateInWeek ${startOfWeek(firstDateInWeek).toString()} and ${endOfWeek(firstDateInWeek).toString()}`);
+      // getVideoId(data[index]);
+      // weekWatchtime += getVideoDurationById(getVideoId(data[index]));
     } else {
-      console.log(`${currentElementDate.toString()} is NOT between firstDateInWeek ${startOfWeek(firstDateInWeek).toString()} and ${endOfWeek(firstDateInWeek).toString()}`);
       weekNumber++;
       console.log("Week number:" + weekNumber);
       let start = currentElementDate;
-      console.log("Week no." + weekNumber + " starts with " + startOfWeek(start));
+      console.log(
+        "Week no." + weekNumber + " starts with " + startOfWeek(start)
+      );
       firstDateInWeek = start; // currentElementDate determines the new week range
+
+      // reset weekWatchime
+      weekWatchtime = 0;
     }
   }
-  
-  
+
   // console.log(withinWeek(startOfWeek(new Date("Mon Apr 13 2020 11:45:29")), new Date("Tue Apr 14 2020")));
 };
 
@@ -132,8 +127,8 @@ const withinWeek = (firstDateInWeek, current) => {
 
   let firstDay = startOfWeek(firstDateInWeek); // create Date objects
   let lastDay = endOfWeek(firstDateInWeek);
-  
- /* console.log(
+
+  /* console.log(
     "In week from " + firstDay.toString() + " to " + lastDay.toString() + "."
   );*/
 
@@ -143,7 +138,7 @@ const withinWeek = (firstDateInWeek, current) => {
     current.getTime() <= lastDay.getTime()
       ? true
       : false;
-    
+
   return within;
 };
 
@@ -151,23 +146,23 @@ const withinWeek = (firstDateInWeek, current) => {
 const endOfWeek = (date) => {
   let diff = date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1);
   let end = new Date(date.setDate(diff + 6));
-  
+
   end.setHours(23);
   end.setMinutes(59);
   end.setSeconds(59);
-  
+
   return end;
 };
 
 // gets the date that corresponds to the start of the week
 const startOfWeek = (date) => {
   var diff = date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1);
-  let start = new Date(date.setDate(diff)); 
-  
+  let start = new Date(date.setDate(diff));
+
   start.setHours(0);
   start.setMinutes(0);
   start.setSeconds(0);
-  
+
   return start;
 };
 // for quickly testing
@@ -177,4 +172,6 @@ Date.prototype.addDays = function (days) {
   return date;
 };
 
+console.log("TtdBAA3hCxY's duration: ");
+getVideoDurationById("TtdBAA3hCxY");
 getVideosLatestWeek();
