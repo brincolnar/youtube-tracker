@@ -2,6 +2,7 @@ const https = require("https");
 const fs = require("fs");
 const apiKey = "AIzaSyAG6cMYtyuVzQeuq_f1U94gtuBbWpx3d4k";
 const url = require("url");
+const axios = require("axios");
 
 // get video duration by id
 const getVideoDurationById = (id) => {
@@ -73,6 +74,27 @@ const getVideoDurationById = (id) => {
   );
 };
 
+// get video duration by id (using axios)
+let test;
+const getVideoDurationByIdAxios = (id) => {
+  axios
+    .get(
+      `https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails&id=${id}&key=${apiKey}`
+    )
+    .then((response) => {
+      console.log(response.data);
+      const json = response.data;
+
+      const contentDetails = json.items[0].contentDetails;
+
+      const duration = contentDetails.duration;
+
+      test = duration;
+
+      return test;
+    })
+    .catch((error) => console.log(error));
+};
 const getVideoId = (videoObject) => {
   const videoUrl = videoObject.titleUrl;
 
@@ -173,5 +195,9 @@ Date.prototype.addDays = function (days) {
 };
 
 console.log("TtdBAA3hCxY's duration: ");
-getVideoDurationById("TtdBAA3hCxY");
+
+getVideoDurationByIdAxios("TtdBAA3hCxY");
 getVideosLatestWeek();
+
+// with asynchronous code do take watchime from return in the then() section
+// of the returned promise then add it to totalWatchime
