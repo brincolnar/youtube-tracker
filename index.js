@@ -1,87 +1,13 @@
-const https = require("https");
 const fs = require("fs");
 const apiKey = "AIzaSyAG6cMYtyuVzQeuq_f1U94gtuBbWpx3d4k";
 const url = require("url");
 const axios = require("axios");
 
 // get video duration by id
-const getVideoDurationById = (id) => {
-  https.get(
-    `https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails&id=${id}&key=${apiKey}`,
-    (res) => {
-      res.on("data", (data) => {
-        const json = JSON.parse(data);
-
-        const contentDetails = json.items[0].contentDetails;
-        // console.log(contentDetails);
-
-        const duration = contentDetails.duration;
-        // console.log(duration);
-
-        // Get duration in seconds);
-        let durationInSeconds = 0;
-        let unit = "S";
-        let exponent = 0;
-
-        for (let i = duration.length - 1; i > -1; i--) {
-          let current = parseInt(duration.charAt(i)); //
-          if (!isNaN(current)) {
-            // current is numerical
-            switch (unit) {
-              case "S":
-                if (exponent == 0) {
-                  durationInSeconds += current; // add seconds
-                  exponent++;
-                } else {
-                  durationInSeconds += 10 * current;
-                }
-
-                break;
-
-              case "M":
-                if (exponent == 0) {
-                  durationInSeconds += current * 60; // add minutes
-                  exponent++;
-                } else {
-                  durationInSeconds += current * 60 * 10; // add minutes
-                }
-
-                break;
-
-              case "H":
-                if (exponent == 0) {
-                  durationInSeconds += current * 60 * 60; // add hours
-                  exponent++;
-                } else {
-                  durationInSeconds += current * 60 * 60 * 10; // add hours
-                }
-
-                break;
-
-              default:
-                break;
-            }
-          } else {
-            // we're dealing with a unit marker
-            unit = duration.charAt(i);
-            exponent = 0;
-          }
-        }
-
-        console.log(durationInSeconds + "s");
-      });
-    }
-  );
-};
-
-// get video duration by id (using axios)
-let test;
-const getVideoDurationByIdAxios = (id) => {
-  axios
-    .get(
-      `https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails&id=${id}&key=${apiKey}`
-    )
-    .then((response) => {
+const getVideoDurationById = (id, callback) => {
+  axios.get(
+    `https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails&id=${id}&key=${apiKey}`)
+    .then(response => {
       console.log(response.data);
       const json = response.data;
 
@@ -89,17 +15,69 @@ const getVideoDurationByIdAxios = (id) => {
 
       const duration = contentDetails.duration;
 
-      test = duration;
+      // Get duration in seconds);
+      let durationInSeconds = 0;
+      let unit = "S";
+      let exponent = 0;
 
-      return test;
+      for (let i = duration.length - 1; i > -1; i--) {
+        let current = parseInt(duration.charAt(i)); //
+        if (!isNaN(current)) {
+          // current is numerical
+          switch (unit) {
+            case "S":
+              if (exponent == 0) {
+                durationInSeconds += current; // add seconds
+                exponent++;
+              } else {
+                durationInSeconds += 10 * current;
+              }
+
+              break;
+
+            case "M":
+              if (exponent == 0) {
+                durationInSeconds += current * 60; // add minutes
+                exponent++;
+              } else {
+                durationInSeconds += current * 60 * 10; // add minutes
+              }
+
+              break;
+
+            case "H":
+              if (exponent == 0) {
+                durationInSeconds += current * 60 * 60; // add hours
+                exponent++;
+              } else {
+                durationInSeconds += current * 60 * 60 * 10; // add hours
+              }
+
+              break;
+
+            default:
+              break;
+          }
+        } else {
+          // we're dealing with a unit marker
+          unit = duration.charAt(i);
+          exponent = 0;
+        }
+      }
+
+      callback(durationInSeconds);
     })
-    .catch((error) => console.log(error));
+    .catch((error) => {
+      console.log(error)
+      return 0;
+    });
 };
+
 const getVideoId = (videoObject) => {
   const videoUrl = videoObject.titleUrl;
 
   const queryObject = url.parse(videoUrl, true).query;
-  console.log(queryObject.v);
+  return queryObject.v;
 };
 // Read from the zgodovina_ogledov.json
 const data = JSON.parse(fs.readFileSync("zgodovina_ogledov.json"));
@@ -111,18 +89,30 @@ const getVideosLatestWeek = () => {
   // maps weekNumber to total watchtime in that week
   let week2Watchtime = [];
 
-  const weekWatchtime = 0; // current weeks's watchtime
+  let weekWatchtime = 0; // current weeks's watchtime
 
-  for (let index = data.length - 2; index > -100 + data.length; index--) {
+  for (let index = data.length - 2; index > -10 + data.length; index--) {
     const currentElementDate = parseISOString(data[index].time);
     //console.log("currentElementDate " + currentElementDate.toString());
 
     if (withinWeek(firstDateInWeek, currentElementDate)) {
       // check if currentElementDate is in week
       // add to the weeks watch time
-      // getVideoId(data[index]);
-      // weekWatchtime += getVideoDurationById(getVideoId(data[index]));
+      let id = getVideoId(data[index]);
+
+      getVideoDurationById(id, duration => {
+        weekWatchtime += duration;
+
+        console.log(`duration: ${duration}`);
+        console.log(`weekWatchtime: ${weekWatchtime}`);
+      })
     } else {
+      // log week's watchime
+      console.log(`Week nr. ${weekNumber} watchime: ${weekWatchtime}`);
+      
+      // reset week's watchime
+      weekWatchtime = 0;
+
       weekNumber++;
       console.log("Week number:" + weekNumber);
       let start = currentElementDate;
@@ -196,8 +186,10 @@ Date.prototype.addDays = function (days) {
 
 console.log("TtdBAA3hCxY's duration: ");
 
-getVideoDurationByIdAxios("TtdBAA3hCxY");
+// getVideoDurationByIdAxios("TtdBAA3hCxY");
 getVideosLatestWeek();
 
+let a = 0;
+getVideoDurationById("2YptPU1iajA", a);
 // with asynchronous code do take watchime from return in the then() section
 // of the returned promise then add it to totalWatchime
