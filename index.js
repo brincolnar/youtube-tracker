@@ -3,12 +3,13 @@ const apiKey = "AIzaSyAG6cMYtyuVzQeuq_f1U94gtuBbWpx3d4k";
 const url = require("url");
 const axios = require("axios");
 
+
 // get video duration by id
 const getVideoDurationById = (id, callback) => {
   axios.get(
     `https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails&id=${id}&key=${apiKey}`)
     .then(response => {
-      console.log(response.data);
+      // console.log(response.data);
       const json = response.data;
 
       const contentDetails = json.items[0].contentDetails;
@@ -65,11 +66,26 @@ const getVideoDurationById = (id, callback) => {
         }
       }
 
+      console.log(durationInSeconds);
       callback(durationInSeconds);
     })
-    .catch((error) => {
-      console.log(error)
-      return 0;
+    .catch(error => {
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.log(error.response.data);
+        console.log(error.response.status);
+        console.log(error.response.headers);
+      } else if (error.request) {
+        // The request was made but no response was received
+        // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+        // http.ClientRequest in node.js
+        console.log(error.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.log('Error', error.message);
+      }
+      // console.log(error.config);
     });
 };
 
@@ -91,7 +107,7 @@ const getVideosLatestWeek = () => {
 
   let weekWatchtime = 0; // current weeks's watchtime
 
-  for (let index = data.length - 2; index > -10 + data.length; index--) {
+  for (let index = data.length - 1; index > -10 + data.length; index--) {
     const currentElementDate = parseISOString(data[index].time);
     //console.log("currentElementDate " + currentElementDate.toString());
 
@@ -100,12 +116,23 @@ const getVideosLatestWeek = () => {
       // add to the weeks watch time
       let id = getVideoId(data[index]);
 
-      getVideoDurationById(id, duration => {
+      let callbackF = (duration, weekWatchime) => {
+        
         weekWatchtime += duration;
-
+      
+        console.log(`ìd: ${id}:`);
         console.log(`duration: ${duration}`);
         console.log(`weekWatchtime: ${weekWatchtime}`);
-      })
+      };
+
+      getVideoDurationById(id, (duration, weekWatchime) => {
+        
+        weekWatchtime += duration;
+      
+        console.log(`ìd: ${id}:`);
+        console.log(`duration: ${duration}`);
+        console.log(`weekWatchtime: ${weekWatchtime}`);
+      });
     } else {
       // log week's watchime
       console.log(`Week nr. ${weekNumber} watchime: ${weekWatchtime}`);
