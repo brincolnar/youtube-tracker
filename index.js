@@ -6,6 +6,8 @@ const axios = require("axios");
 
 // get video duration by id
 const getVideoDurationById = (id, callback) => {
+
+  if((typeof callback).toString() != 'function') return; // hacky, find out why it happens
   axios.get(
     `https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails&id=${id}&key=${apiKey}`)
     .then(response => {
@@ -70,6 +72,8 @@ const getVideoDurationById = (id, callback) => {
       callback(durationInSeconds);
     })
     .catch(error => {
+      console.log(`callback on error: ${callback} callback type: ${typeof callback}`);
+      console.log(error);
       if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
@@ -95,6 +99,16 @@ const getVideoId = (videoObject) => {
   const queryObject = url.parse(videoUrl, true).query;
   return queryObject.v;
 };
+
+/*let callbackF = (duration, weekWatchime) => {
+        
+  let weekWatchtime = weekWatchime + duration;
+
+  console.log(`ìd: ${id}:`);
+  console.log(`duration: ${duration}`);
+  console.log(`weekWatchtime: ${weekWatchtime}`);
+};*/
+
 // Read from the zgodovina_ogledov.json
 const data = JSON.parse(fs.readFileSync("zgodovina_ogledov.json"));
 
@@ -116,16 +130,8 @@ const getVideosLatestWeek = () => {
       // add to the weeks watch time
       let id = getVideoId(data[index]);
 
-      let callbackF = (duration, weekWatchime) => {
-        
-        weekWatchtime += duration;
-      
-        console.log(`ìd: ${id}:`);
-        console.log(`duration: ${duration}`);
-        console.log(`weekWatchtime: ${weekWatchtime}`);
-      };
 
-      getVideoDurationById(id, (duration, weekWatchime) => {
+      getVideoDurationById(id, (duration) => {
         
         weekWatchtime += duration;
       
