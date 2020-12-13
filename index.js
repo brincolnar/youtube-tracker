@@ -3,6 +3,10 @@ const apiKey = "AIzaSyAG6cMYtyuVzQeuq_f1U94gtuBbWpx3d4k";
 const url = require("url");
 const axios = require("axios");
 
+// global
+
+// maps weekNumber to total watchtime in that week
+let week2Watchtime = [];
 
 // get video duration by id
 const getVideoDurationById = (id, callback) => {
@@ -13,6 +17,12 @@ const getVideoDurationById = (id, callback) => {
     .then(response => {
       // console.log(response.data);
       const json = response.data;
+
+      if(json.items[0] == undefined) { // when video is now private, for example
+        console.log(json);
+        console.log(`id: ${id}`);
+        return;
+      }
 
       const contentDetails = json.items[0].contentDetails;
 
@@ -116,9 +126,6 @@ const getVideosLatestWeek = () => {
   let weekNumber = 1; // keeps track of the current week - (week is defined from Monday to Sunday -- inclusive)
   let firstDateInWeek = startOfWeek(parseISOString(data[data.length - 1].time)); // first date in current week (String -> Date)
 
-  // maps weekNumber to total watchtime in that week
-  let week2Watchtime = [];
-
   let weekWatchtime = 0; // current weeks's watchtime
 
   for (let index = data.length - 1; index > -10 + data.length; index--) {
@@ -134,12 +141,21 @@ const getVideosLatestWeek = () => {
       getVideoDurationById(id, (duration) => {
         
         weekWatchtime += duration;
-      
+        console.log(`weekWatchtime: ${weekWatchtime}`);
+        
+        /*
         console.log(`ìd: ${id}:`);
         console.log(`duration: ${duration}`);
         console.log(`weekWatchtime: ${weekWatchtime}`);
+        */
       });
+      
+
     } else {
+
+      // push week object
+      week2Watchtime.push({week: `Week nr. ${weekNumber}: ${firstDateInWeek} - ${endOfWeek(firstDateInWeek)}`, watchtime: weekWatchtime});
+
       // log week's watchime
       console.log(`Week nr. ${weekNumber} watchime: ${weekWatchtime}`);
       
@@ -222,7 +238,7 @@ console.log("TtdBAA3hCxY's duration: ");
 // getVideoDurationByIdAxios("TtdBAA3hCxY");
 getVideosLatestWeek();
 
-let a = 0;
-getVideoDurationById("2YptPU1iajA", a);
-// with asynchronous code do take watchime from return in the then() section
-// of the returned promise then add it to totalWatchime
+// debug
+setTimeout(() => {
+  console.log(week2Watchtime);
+}, 2000);
