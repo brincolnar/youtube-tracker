@@ -2,6 +2,8 @@ const fs = require("fs");
 const apiKey = "AIzaSyAG6cMYtyuVzQeuq_f1U94gtuBbWpx3d4k";
 const url = require("url");
 const axios = require("axios");
+const zgodovina_ogledov = "./zgodovina_ogledov.json";
+const file = require(zgodovina_ogledov);
 
 // global
 
@@ -10,6 +12,7 @@ let week2Watchtime = [];
 
 // get video duration by id
 const getVideoDurationById = (id, callback) => {
+  // i is used in assignDuration 
 
   if((typeof callback).toString() != 'function') return; // hacky, find out why it happens
   axios.get(
@@ -78,7 +81,7 @@ const getVideoDurationById = (id, callback) => {
         }
       }
 
-      console.log(durationInSeconds);
+      // console.log(durationInSeconds);
       callback(durationInSeconds);
     })
     .catch(error => {
@@ -103,24 +106,65 @@ const getVideoDurationById = (id, callback) => {
     });
 };
 
+// simulation of getVideoDurationById, when I exceed API quota
+const getVideoDurationByIdSym = (id, callback) => {
+
+  if((typeof callback).toString() != 'function') return; // hacky, find out why it happens
+
+  // simulating the request (waiting for response)
+  setTimeout(() => {
+    callback(1); // callback with arbitrary number
+  },
+  1000);
+};
+
 const getVideoId = (videoObject) => {
+
+  // for example, when videos are removed
+  if(videoObject == undefined) return;
+
   const videoUrl = videoObject.titleUrl;
+  if(videoUrl == undefined) return;
+
+  console.log(`videoUrl: ${videoUrl}`);
 
   const queryObject = url.parse(videoUrl, true).query;
+  
+  console.log(queryObject.v);
   return queryObject.v;
 };
 
-/*let callbackF = (duration, weekWatchime) => {
-        
-  let weekWatchtime = weekWatchime + duration;
-
-  console.log(`ìd: ${id}:`);
-  console.log(`duration: ${duration}`);
-  console.log(`weekWatchtime: ${weekWatchtime}`);
-};*/
 
 // Read from the zgodovina_ogledov.json
 const data = JSON.parse(fs.readFileSync("zgodovina_ogledov.json"));
+
+// assign a duration field to a JSON video object zgodovina_ogledov.json 
+const assignDuration= () => {
+
+  for(let i = file.length - 1; i > -10 + file.length - 1; i--) {
+    let id = getVideoId(file[i]);
+    console.log(`id: ${id}`);
+
+    if(file[i] != undefined)
+      file[i]["duration"] = "not found with API";
+
+    // add duration field to every video object
+    getVideoDurationById(id, (duration) => {
+      file[i]["duration"] = `${duration}`;
+      
+      // console.log(`${id}'s duration: ${duration}`);
+      // console.log(`i: ${i}`);
+      // console.log(file[i]);
+      
+      // save changes to file
+        fs.writeFile(zgodovina_ogledov, JSON.stringify(file), function writeJSON(err) {
+          if (err) return console.log(err);
+          console.log('writing to ' + zgodovina_ogledov);
+        });
+
+    });
+  };
+}
 
 const getVideosLatestWeek = () => {
   let weekNumber = 1; // keeps track of the current week - (week is defined from Monday to Sunday -- inclusive)
@@ -130,27 +174,51 @@ const getVideosLatestWeek = () => {
 
   for (let index = data.length - 1; index > -10 + data.length; index--) {
     const currentElementDate = parseISOString(data[index].time);
-    //console.log("currentElementDate " + currentElementDate.toString());
-
+    let id = getVideoId(data[index]);
+    
+    /*
     if (withinWeek(firstDateInWeek, currentElementDate)) {
       // check if currentElementDate is in week
       // add to the weeks watch time
-      let id = getVideoId(data[index]);
+    */
+    getVideoDurationById(id, (duration) => {
 
-
-      getVideoDurationById(id, (duration) => {
-        
-        weekWatchtime += duration;
-        console.log(`weekWatchtime: ${weekWatchtime}`);
-        
-        /*
         console.log(`ìd: ${id}:`);
         console.log(`duration: ${duration}`);
-        console.log(`weekWatchtime: ${weekWatchtime}`);
-        */
+
+        if (withinWeek(firstDateInWeek, currentElementDate)) {
+
+          // add to current week's watchime
+          weekWatchtime += duration;
+          console.log(`weekWatchtime: ${weekWatchtime}`);
+
+        } else {
+
+          // push week object
+          week2Watchtime.push({week: `Week nr. ${weekNumber}: ${startOfWeek(firstDateInWeek)} - ${endOfWeek(firstDateInWeek)}`, watchtime: weekWatchtime});
+          
+          console.log(`week2Watchtime: ${JSON.stringify(week2Watchtime)}`);
+          
+          // log week's watchime
+          console.log(`Week nr. ${weekNumber} watchime: ${weekWatchtime}`);
+          
+          // reset week's watchime
+          weekWatchtime = 0;
+    
+          weekNumber++;
+          console.log("Week number:" + weekNumber);
+          let start = currentElementDate;
+          console.log(
+            "Week no." + weekNumber + " starts with " + startOfWeek(start)
+          );
+          firstDateInWeek = start; // currentElementDate determines the new week range
+    
+          // reset weekWatchime
+          weekWatchtime = 0;
+        }
       });
       
-
+    /*
     } else {
 
       // push week object
@@ -174,8 +242,10 @@ const getVideosLatestWeek = () => {
       weekWatchtime = 0;
     }
   }
+  */
 
-  // console.log(withinWeek(startOfWeek(new Date("Mon Apr 13 2020 11:45:29")), new Date("Tue Apr 14 2020")));
+  // console.log(withinWeek(startOfWeek(new Date("Mon Apr 13 2020 11:45:29")), new Date("Tue Apr 14 2020"))); 
+  } 
 };
 
 const parseISOString = (s) => {
@@ -233,12 +303,14 @@ Date.prototype.addDays = function (days) {
   return date;
 };
 
-console.log("TtdBAA3hCxY's duration: ");
+// console.log("TtdBAA3hCxY's duration: ");
+
+// getVideoDurationByIdXml("TtdBAA3hCxY");
 
 // getVideoDurationByIdAxios("TtdBAA3hCxY");
-getVideosLatestWeek();
-
-// debug
-setTimeout(() => {
-  console.log(week2Watchtime);
-}, 2000);
+// getVideosLatestWeek();
+/*
+console.log(file[file.length - 1]);
+getVideoId(file[file.length - 1]);
+*/
+assignDuration();
