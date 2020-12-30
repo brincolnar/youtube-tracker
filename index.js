@@ -273,7 +273,7 @@ Date.prototype.addDays = function (days) {
   return date;
 };
 
-// console.log("TtdBAA3hCxY's duration: ");
+// console.log("TtdBAA3hCxY's duration: "); // 
 
 // getVideoDurationByIdXml("TtdBAA3hCxY");
 
