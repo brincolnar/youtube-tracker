@@ -23,6 +23,7 @@ const getVideoDurationById = (id, callback) => {
 
       if(json.items[0] == undefined) { // when video is now private, for example
         console.log(json);
+        callback("video not available");
         console.log(`id: ${id}`);
         return;
       }
@@ -85,6 +86,8 @@ const getVideoDurationById = (id, callback) => {
       callback(durationInSeconds);
     })
     .catch(error => {
+      
+      callback(error);
       console.log(`callback on error: ${callback} callback type: ${typeof callback}`);
       console.log(error);
       if (error.response) {
@@ -103,6 +106,7 @@ const getVideoDurationById = (id, callback) => {
         console.log('Error', error.message);
       }
       // console.log(error.config);
+      
     });
 };
 
@@ -126,8 +130,6 @@ const getVideoId = (videoObject) => {
   const videoUrl = videoObject.titleUrl;
   if(videoUrl == undefined) return;
 
-  console.log(`videoUrl: ${videoUrl}`);
-
   const queryObject = url.parse(videoUrl, true).query;
   
   console.log(queryObject.v);
@@ -139,96 +141,68 @@ const getVideoId = (videoObject) => {
 const data = JSON.parse(fs.readFileSync("zgodovina_ogledov.json"));
 
 // assign a duration field to a JSON video object zgodovina_ogledov.json 
-const assignDuration= () => {
+const assignDuration= (startIndex, callback, size) => { 
 
-  for(let i = file.length - 1; i > -10 + file.length - 1; i--) {
+  let videosFetched = size; // number of videos to get duration for
+
+  // assume file represents json file (json objects)
+  // change from 11899 to file.length - 1 (or even better, a dynamic index)
+  for(let i = 10899; i > -size + 10899; i--) {
     let id = getVideoId(file[i]);
-    console.log(`id: ${id}`);
 
-    if(file[i] != undefined)
+    if(file[i] == undefined)
       file[i]["duration"] = "not found with API";
 
     // add duration field to every video object
     getVideoDurationById(id, (duration) => {
-      file[i]["duration"] = `${duration}`;
+        videosFetched--;
+        file[i]["duration"] = duration;
       
       // console.log(`${id}'s duration: ${duration}`);
-      // console.log(`i: ${i}`);
+      console.log(`i: ${i}`);
       // console.log(file[i]);
       
-      // save changes to file
-        fs.writeFile(zgodovina_ogledov, JSON.stringify(file), function writeJSON(err) {
-          if (err) return console.log(err);
-          console.log('writing to ' + zgodovina_ogledov);
-        });
-
+      callback(videosFetched);
     });
   };
 }
 
-const getVideosLatestWeek = () => {
+const weeksToTime = (size) => {
   let weekNumber = 1; // keeps track of the current week - (week is defined from Monday to Sunday -- inclusive)
   let firstDateInWeek = startOfWeek(parseISOString(data[data.length - 1].time)); // first date in current week (String -> Date)
 
   let weekWatchtime = 0; // current weeks's watchtime
 
-  for (let index = data.length - 1; index > -10 + data.length; index--) {
+  for (let index = data.length - 1; index >= -size + data.length; index--) {
     const currentElementDate = parseISOString(data[index].time);
+    
     let id = getVideoId(data[index]);
+    let duration = data[index].duration;
+
+
+    console.log(`ìd: ${id}:`);
+    console.log(`index of object:  ${index}`);
+    console.log(`duration: ${duration}`);
+
     
-    /*
     if (withinWeek(firstDateInWeek, currentElementDate)) {
-      // check if currentElementDate is in week
-      // add to the weeks watch time
-    */
-    getVideoDurationById(id, (duration) => {
 
-        console.log(`ìd: ${id}:`);
-        console.log(`duration: ${duration}`);
-
-        if (withinWeek(firstDateInWeek, currentElementDate)) {
-
-          // add to current week's watchime
-          weekWatchtime += duration;
-          console.log(`weekWatchtime: ${weekWatchtime}`);
-
-        } else {
-
-          // push week object
-          week2Watchtime.push({week: `Week nr. ${weekNumber}: ${startOfWeek(firstDateInWeek)} - ${endOfWeek(firstDateInWeek)}`, watchtime: weekWatchtime});
-          
-          console.log(`week2Watchtime: ${JSON.stringify(week2Watchtime)}`);
-          
-          // log week's watchime
-          console.log(`Week nr. ${weekNumber} watchime: ${weekWatchtime}`);
-          
-          // reset week's watchime
-          weekWatchtime = 0;
-    
-          weekNumber++;
-          console.log("Week number:" + weekNumber);
-          let start = currentElementDate;
-          console.log(
-            "Week no." + weekNumber + " starts with " + startOfWeek(start)
-          );
-          firstDateInWeek = start; // currentElementDate determines the new week range
-    
-          // reset weekWatchime
-          weekWatchtime = 0;
-        }
-      });
+      // add to current week's watchime
+      if(!isNaN(duration)) { // some videos are deleted
+        weekWatchtime += duration;
+      }
       
-    /*
+      // console.log(`weekWatchtime: ${weekWatchtime}`);
+
     } else {
 
       // push week object
-      week2Watchtime.push({week: `Week nr. ${weekNumber}: ${firstDateInWeek} - ${endOfWeek(firstDateInWeek)}`, watchtime: weekWatchtime});
-
+      week2Watchtime.push({week: `Week nr. ${weekNumber}: ${startOfWeek(firstDateInWeek)} - ${endOfWeek(firstDateInWeek)}`, watchtime: weekWatchtime});
+          
+      console.log(`week2Watchtime: ${JSON.stringify(week2Watchtime)}`);
+          
       // log week's watchime
       console.log(`Week nr. ${weekNumber} watchime: ${weekWatchtime}`);
-      
-      // reset week's watchime
-      weekWatchtime = 0;
 
       weekNumber++;
       console.log("Week number:" + weekNumber);
@@ -241,10 +215,6 @@ const getVideosLatestWeek = () => {
       // reset weekWatchime
       weekWatchtime = 0;
     }
-  }
-  */
-
-  // console.log(withinWeek(startOfWeek(new Date("Mon Apr 13 2020 11:45:29")), new Date("Tue Apr 14 2020"))); 
   } 
 };
 
@@ -313,4 +283,28 @@ Date.prototype.addDays = function (days) {
 console.log(file[file.length - 1]);
 getVideoId(file[file.length - 1]);
 */
-assignDuration();
+
+/*
+assignDuration(9899, (videosFetched) => { // first argument - index of first video to assign duration to
+
+  console.log(`videosFetched: ${videosFetched}`);
+
+  if(videosFetched == 0) { // all objects fetched
+
+    console.log("Finished fetching video details...");
+
+    // save changes to file
+    fs.writeFile(zgodovina_ogledov, JSON.stringify(file), function writeJSON(err) {
+      if (err) 
+        return console.log(err);
+      console.log('writing to ' + zgodovina_ogledov);
+    });
+  }
+}, 2000);
+*/
+
+// now we have fetched duration of video objetcts, we can build {week, duration} objects
+
+weeksToTime(3000);
+console.log(file.length);
+console.log(week2Watchtime);
