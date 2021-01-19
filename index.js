@@ -9,6 +9,7 @@ const file = require(zgodovina_ogledov);
 
 // maps weekNumber to total watchtime in that week
 let week2Watchtime = [];
+let day2Watchtime = [];
 
 // get video duration by id
 const getVideoDurationById = (id, callback) => {
@@ -18,20 +19,20 @@ const getVideoDurationById = (id, callback) => {
   axios.get(
     `https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails&id=${id}&key=${apiKey}`)
     .then(response => {
-      // console.log(response.data);
+      
       const json = response.data;
 
       if(json.items[0] == undefined) { // when video is now private, for example
-        console.log(json);
+        // console.log(json);
         callback("video not available");
-        console.log(`id: ${id}`);
+        // console.log(`id: ${id}`);
         return;
       }
 
       const contentDetails = json.items[0].contentDetails;
 
       const duration = contentDetails.duration;
-
+      console.log(`duration ${duration}`)
       // Get duration in seconds);
       let durationInSeconds = 0;
       let unit = "S";
@@ -110,17 +111,6 @@ const getVideoDurationById = (id, callback) => {
     });
 };
 
-// simulation of getVideoDurationById, when I exceed API quota
-const getVideoDurationByIdSym = (id, callback) => {
-
-  if((typeof callback).toString() != 'function') return; // hacky, find out why it happens
-
-  // simulating the request (waiting for response)
-  setTimeout(() => {
-    callback(1); // callback with arbitrary number
-  },
-  1000);
-};
 
 const getVideoId = (videoObject) => {
 
@@ -144,10 +134,11 @@ const data = JSON.parse(fs.readFileSync("zgodovina_ogledov.json"));
 const assignDuration= (startIndex, callback, size) => { 
 
   let videosFetched = size; // number of videos to get duration for
+  let writeAmount = 150; // number of videos to fetch before updating the file (instead of just videosFetched == 0)
 
   // assume file represents json file (json objects)
-  // change from 11899 to file.length - 1 (or even better, a dynamic index)
-  for(let i = 10899; i > -size + 10899; i--) {
+  
+  for(let i = startIndex; i > -size + startIndex; i--) {
     let id = getVideoId(file[i]);
 
     if(file[i] == undefined)
@@ -156,13 +147,16 @@ const assignDuration= (startIndex, callback, size) => {
     // add duration field to every video object
     getVideoDurationById(id, (duration) => {
         videosFetched--;
+        writeAmount--;
+
+        console.log(duration);
         file[i]["duration"] = duration;
       
       // console.log(`${id}'s duration: ${duration}`);
       console.log(`i: ${i}`);
       // console.log(file[i]);
       
-      callback(videosFetched);
+      callback(videosFetched, writeAmount);
     });
   };
 }
@@ -172,20 +166,23 @@ const weeksToTime = (size) => {
   let firstDateInWeek = startOfWeek(parseISOString(data[data.length - 1].time)); // first date in current week (String -> Date)
 
   let weekWatchtime = 0; // current weeks's watchtime
+  let firstId;
 
   for (let index = data.length - 1; index >= -size + data.length; index--) {
     const currentElementDate = parseISOString(data[index].time);
     
     let id = getVideoId(data[index]);
     let duration = data[index].duration;
-
-
+    
+    /*
     console.log(`ìd: ${id}:`);
     console.log(`index of object:  ${index}`);
     console.log(`duration: ${duration}`);
-
+    */
     
     if (withinWeek(firstDateInWeek, currentElementDate)) {
+
+      if(weekWatchtime == 0) firstId = id;
 
       // add to current week's watchime
       if(!isNaN(duration)) { // some videos are deleted
@@ -197,7 +194,7 @@ const weeksToTime = (size) => {
     } else {
 
       // push week object
-      week2Watchtime.push({week: `Week nr. ${weekNumber}: ${startOfWeek(firstDateInWeek)} - ${endOfWeek(firstDateInWeek)}`, watchtime: weekWatchtime});
+      week2Watchtime.push({week: `Week nr. ${weekNumber}: ${startOfWeek(firstDateInWeek)} - ${endOfWeek(firstDateInWeek)}`, watchtime: weekWatchtime, firstId: firstId, lastId: getVideoId(data[index+1])});
           
       console.log(`week2Watchtime: ${JSON.stringify(week2Watchtime)}`);
           
@@ -214,13 +211,64 @@ const weeksToTime = (size) => {
 
       // reset weekWatchime
       weekWatchtime = 0;
+      if(!isNaN(duration)) { // some videos are deleted
+        weekWatchtime += duration;
+      }
+    }
+  } 
+};
+
+// each day is asigned time watched Youtube videos 
+const daysToTime = (size) => {
+  let durations = [];
+  let dayNumber = 1; // keeps track of the current day
+  let day = parseISOString(data[data.length - 1].time); // first date in current week (String -> Date)
+  console.log("first day: " + day);
+  let dailyWatchtime = 0; // current day's watchtime
+
+  for (let index = data.length - 1; index >= -size + data.length; index--) {
+    const current = parseISOString(data[index].time);
+    let duration = data[index]["duration"]; // should be a number
+
+    if (withinDay(day, current)) {
+
+      // add to current day's watchime
+      if(!isNaN(duration)) { // some videos are deleted
+        dailyWatchtime += duration;
+        durations.push(duration);
+      }
+      
+      
+    } else {
+      // log all durations for this day
+      console.log(`new day begins with ${current}`);
+      console.log(`day: ${day.getDate()}/${day.getMonth() + 1}/${day.getFullYear()} durations: ${durations}`);
+      durations = [];
+      // push week object
+      day2Watchtime.push({day: `${day.getDate()}/${day.getMonth() + 1}/${day.getFullYear()}`, watchtime: dailyWatchtime, lastId: getVideoId(data[index+1])});
+          
+      console.log(`day2Watchtime: ${JSON.stringify(day2Watchtime)}`);
+
+      dayNumber++;
+      console.log("Day number:" + dayNumber);
+
+      day = current;
+
+      // reset weekWatchime
+      dailyWatchtime = 0;
+      if(!isNaN(duration)) { // some videos are deleted
+        dailyWatchtime += duration;
+        durations.push(duration);
+      }
     }
   } 
 };
 
 const parseISOString = (s) => {
   let b = s.split(/\D+/);
-  return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
+
+  // console.log(new Date(Date.UTC(b[0], b[1])));
+  return new Date(Date.UTC(b[0], --b[1], b[2]));
 };
 
 const withinWeek = (firstDateInWeek, current) => {
@@ -241,6 +289,13 @@ const withinWeek = (firstDateInWeek, current) => {
       : false;
 
   return within;
+};
+
+const withinDay = (day, pendingDay) => {
+  // testing whether day == pendingDay
+  //console.log(day.getDate() == pendingDay.getDate() && day.getMonth() == pendingDay.getMonth() && day.getFullYear() == pendingDay.getFullYear());
+
+  return day.getDate() == pendingDay.getDate() && day.getMonth() == pendingDay.getMonth() && day.getFullYear() == pendingDay.getFullYear();
 };
 
 // gets the date that corresponds to the end of the week
@@ -266,6 +321,8 @@ const startOfWeek = (date) => {
 
   return start;
 };
+
+
 // for quickly testing
 Date.prototype.addDays = function (days) {
   var date = new Date(this.valueOf());
@@ -273,25 +330,21 @@ Date.prototype.addDays = function (days) {
   return date;
 };
 
-// console.log("TtdBAA3hCxY's duration: "); // 
 
-// getVideoDurationByIdXml("TtdBAA3hCxY");
-
-// getVideoDurationByIdAxios("TtdBAA3hCxY");
-// getVideosLatestWeek();
+// 2558 --> 0
 /*
-console.log(file[file.length - 1]);
-getVideoId(file[file.length - 1]);
-*/
-
-/*
-assignDuration(9899, (videosFetched) => { // first argument - index of first video to assign duration to
+assignDuration(2558, (videosFetched, writeAmount) => { // first argument - index of first video to assign duration to
 
   console.log(`videosFetched: ${videosFetched}`);
+  
+  if(videosFetched == 0 || writeAmount == 0) { // all objects fetched or enough objects for updating the file were fetched
 
-  if(videosFetched == 0) { // all objects fetched
-
-    console.log("Finished fetching video details...");
+    if(videosFetched == 0) {
+      console.log("Finished fetching all durations...");
+    } else {
+      console.log(`${writeAmount} videos fetched. Updating to file...`); // writeAmount == 0
+    }
+    
 
     // save changes to file
     fs.writeFile(zgodovina_ogledov, JSON.stringify(file), function writeJSON(err) {
@@ -300,11 +353,15 @@ assignDuration(9899, (videosFetched) => { // first argument - index of first vid
       console.log('writing to ' + zgodovina_ogledov);
     });
   }
-}, 2000);
+}, 2558);
 */
 
 // now we have fetched duration of video objetcts, we can build {week, duration} objects
 
-weeksToTime(3000);
-console.log(file.length);
-console.log(week2Watchtime);
+
+// weeksToTime(file.length);
+daysToTime(file.length);
+
+// console.log(week2Watchtime);
+console.log(day2Watchtime);
+
