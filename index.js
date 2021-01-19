@@ -89,24 +89,7 @@ const getVideoDurationById = (id, callback) => {
     .catch(error => {
       
       callback(error);
-      console.log(`callback on error: ${callback} callback type: ${typeof callback}`);
       console.log(error);
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.log(error.response.data);
-        console.log(error.response.status);
-        console.log(error.response.headers);
-      } else if (error.request) {
-        // The request was made but no response was received
-        // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-        // http.ClientRequest in node.js
-        console.log(error.request);
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.log('Error', error.message);
-      }
-      // console.log(error.config);
       
     });
 };
@@ -267,21 +250,17 @@ const daysToTime = (size) => {
 const parseISOString = (s) => {
   let b = s.split(/\D+/);
 
-  // console.log(new Date(Date.UTC(b[0], b[1])));
+  // returns day of month/month/year
   return new Date(Date.UTC(b[0], --b[1], b[2]));
 };
 
 const withinWeek = (firstDateInWeek, current) => {
   // testing whether current (date) is in the week that was started with firstDateInWeek date
 
-  let firstDay = startOfWeek(firstDateInWeek); // create Date objects
+  let firstDay = startOfWeek(firstDateInWeek); // startOfWeek probably redundant
   let lastDay = endOfWeek(firstDateInWeek);
 
-  /* console.log(
-    "In week from " + firstDay.toString() + " to " + lastDay.toString() + "."
-  );*/
 
-  // withing if between Monday at 0:00:00 and Sunday 23:59:59
   let within =
     firstDay.getTime() <= current.getTime() &&
     current.getTime() <= lastDay.getTime()
@@ -303,10 +282,11 @@ const endOfWeek = (date) => {
   let diff = date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1);
   let end = new Date(date.setDate(diff + 6));
 
+  /*
   end.setHours(23);
   end.setMinutes(59);
   end.setSeconds(59);
-
+  */
   return end;
 };
 
@@ -315,10 +295,11 @@ const startOfWeek = (date) => {
   var diff = date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1);
   let start = new Date(date.setDate(diff));
 
+  /*
   start.setHours(0);
   start.setMinutes(0);
   start.setSeconds(0);
-
+  */
   return start;
 };
 
@@ -331,7 +312,7 @@ Date.prototype.addDays = function (days) {
 };
 
 
-// 2558 --> 0
+// This method gets the durations and writes them as fields to JSON objects
 /*
 assignDuration(2558, (videosFetched, writeAmount) => { // first argument - index of first video to assign duration to
 
@@ -358,10 +339,7 @@ assignDuration(2558, (videosFetched, writeAmount) => { // first argument - index
 
 // now we have fetched duration of video objetcts, we can build {week, duration} objects
 
-
-// weeksToTime(file.length);
-daysToTime(file.length);
-
-// console.log(week2Watchtime);
+weeksToTime(1000);
+daysToTime(1000);
+console.log(week2Watchtime);
 console.log(day2Watchtime);
-
