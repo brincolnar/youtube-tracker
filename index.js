@@ -313,8 +313,8 @@ Date.prototype.addDays = function (days) {
 
 
 // This method gets the durations and writes them as fields to JSON objects
-/*
-assignDuration(2558, (videosFetched, writeAmount) => { // first argument - index of first video to assign duration to
+
+assignDuration(1, (videosFetched, writeAmount) => { // first argument - index of first video to assign duration to
 
   console.log(`videosFetched: ${videosFetched}`);
   
@@ -334,12 +334,15 @@ assignDuration(2558, (videosFetched, writeAmount) => { // first argument - index
       console.log('writing to ' + zgodovina_ogledov);
     });
   }
-}, 2558);
-*/
+}, 2);
 
 // now we have fetched duration of video objetcts, we can build {week, duration} objects
 
+/*
 weeksToTime(1000);
 daysToTime(1000);
 console.log(week2Watchtime);
 console.log(day2Watchtime);
+*/
+
+// console.log(data[1]);
