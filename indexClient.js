@@ -103,7 +103,7 @@ graphDataBtn.addEventListener('click', () => {
   // graphWeeks(fromDate, toDate)
 })
 
-const apiKey = "AIzaSyAG6cMYtyuVzQeuq_f1U94gtuBbWpx3d4k";
+const apiKey = "[insert your YoutubeData API key here]";
 
 // wrapper function
 const analyzeData = () => {
@@ -668,9 +668,6 @@ const graphWeeks = (startDay, endDay) => {
 }
 
 /* TO-DO */
-// graphWeeks function (similar to graphDays)
-// connect HTML to JS (picking from/to date, unit)
 // design front end in XD or Figma
 // code the front end: style
-// optional: drag & drop
-// optional: alert when chosen dates are out of bound for file history
+// drag & drop
